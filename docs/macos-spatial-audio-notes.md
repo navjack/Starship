@@ -17,6 +17,19 @@ The engine mixer currently owns the audio image. It emits a finished PCM bed:
 
 The macOS spatial backend must preserve that invariant. It may route the 5.1 bed through Apple spatial rendering, but it must not silently reinterpret channels or invent height/object data after the bed has already been mixed.
 
+## Current macOS Native Backend
+
+The native macOS backend uses AudioToolbox with SDL-style queue semantics. Stereo is rendered to the default output. Surround 5.1 is rendered through `AUSpatialMixer` as an `AmbienceBed` with:
+
+- input layout `kAudioChannelLayoutTag_AudioUnit_5_1`
+- source mode `kSpatialMixerSourceMode_AmbienceBed`
+- spatialization algorithm `kSpatializationAlgorithm_UseOutputType`
+- output type `kSpatialMixerOutputType_Headphones`
+- head tracking enabled through `kAudioUnitProperty_SpatialMixerEnableHeadTracking`
+- personalized HRTF mode set to system-auto
+
+The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels. It is diagnostic and future plumbing for object work; the current audible signal is still the finished 5.1 bed.
+
 ## What Atmos-Style Work Actually Requires
 
 An Atmos-style implementation is a new mixer/content model, not a backend flag. The existing 5.1 bed has already lost the information needed for objects: source identity, world position, velocity, spread, priority, and dynamic automation.
@@ -52,6 +65,15 @@ The current native backend is built around SDL-style queue semantics and AudioTo
 - the game/mixer exports a bed and optional spatial objects
 - the macOS backend maps that data to AudioUnit inputs or another Apple spatial API
 - backend-specific state stays out of the gameplay mixer
+
+For real object motion, add mono point-source inputs to `AUSpatialMixer` and feed them pre-pan SFX sample streams. Do not try to recover object audio by splitting the finished 5.1 bed. A practical implementation path is:
+
+- keep music, UI, voice, ambience, and low-priority legacy content in the bed
+- preserve per-note or per-SFX PCM for object candidates before `Audio_InitNoteSub` bakes pan into channel volumes
+- assign stable object buses from the active SFX table, using source id plus channel/index lifetime
+- update `kSpatialMixerParam_Azimuth`, `kSpatialMixerParam_Elevation`, `kSpatialMixerParam_Distance`, `kSpatialMixerParam_Gain`, and reverb blend per object bus
+- fold objects back into the bed deterministically when bus budget is exhausted
+- keep AirPods head tracking as a listener transform, not as a substitute for source coordinates
 
 Do not add Dolby-specific branding unless there is an actual Dolby pipeline, licensing story, and runtime verification. "Atmos-style object spatialization" is the accurate engineering term until then.
 

@@ -4,6 +4,7 @@
 #include "audiothread_cmd.h"
 #include "audioseq_cmd.h"
 #include "port/Engine.h"
+#include "public/bridge/audiobridge.h"
 
 void Audio_SetModulationAndPlaySfx(f32* sfxSource, u32 sfxId, f32 freqMod);
 s32 Audio_GetCurrentVoice(void);
@@ -1802,6 +1803,64 @@ void Audio_UpdateSfxVolumeMod(u8 bankId) {
     }
 }
 
+static void Audio_SubmitSpatialAudioFrame(void) {
+    StarshipSpatialAudioFrame frame = { 0 };
+    u8 bankId;
+    u8 i;
+
+    frame.frameId = sAudioFrameCounter;
+    if (gPlayer != NULL) {
+        Player* player = &gPlayer[0];
+        frame.listenerYawDegrees = -player->camYaw * M_RTOD;
+        frame.listenerPitchDegrees = player->camPitch * M_RTOD;
+        frame.listenerRollDegrees = player->bankAngle;
+    }
+
+    for (bankId = 0; bankId < ARRAY_COUNT(sSfxBanks); bankId++) {
+        for (i = 0; i < sChannelsPerBank[sSfxChannelLayout][bankId]; i++) {
+            u8 entryIndex = sActiveSfx[bankId][i].entryIndex;
+            SfxBankEntry* entry;
+            SfxChannelState* channelState;
+            StarshipSpatialAudioSource* source;
+
+            if (entryIndex == 0xFF) {
+                continue;
+            }
+
+            entry = &sSfxBanks[bankId][entryIndex];
+            if (entry->state == 0) {
+                continue;
+            }
+
+            if (entry->channelIndex >= ARRAY_COUNT(sSfxChannelState)) {
+                continue;
+            }
+
+            if (frame.sourceCount >= STARSHIP_SPATIAL_AUDIO_MAX_SOURCES) {
+                frame.overflowCount++;
+                continue;
+            }
+
+            channelState = &sSfxChannelState[entry->channelIndex];
+            source = &frame.sources[frame.sourceCount++];
+            source->sfxId = entry->sfxId;
+            source->bankId = bankId;
+            source->channelIndex = entry->channelIndex;
+            source->token = entry->token;
+            source->isDefaultSource = entry->xPos == gDefaultSfxSource;
+            source->x = (entry->xPos != NULL) ? *entry->xPos : 0.0f;
+            source->y = (entry->yPos != NULL) ? *entry->yPos : 0.0f;
+            source->z = (entry->zPos != NULL) ? *entry->zPos : 0.0f;
+            source->distance = entry->distance;
+            source->gain = channelState->volMod;
+            source->pan = channelState->pan;
+            source->reverb = channelState->reverb;
+        }
+    }
+
+    AudioPlayerSubmitSpatialAudioFrame(&frame);
+}
+
 void Audio_PlayAllSfx(void) {
     u8 bankId;
 
@@ -1813,6 +1872,7 @@ void Audio_PlayAllSfx(void) {
             Audio_UpdateSfxVolumeMod(bankId);
         }
     }
+    Audio_SubmitSpatialAudioFrame();
 }
 
 void Audio_ResetSfx(void) {
