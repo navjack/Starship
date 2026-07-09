@@ -1,5 +1,21 @@
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
+# macOS 27 APIs are required by the native spatial-audio backend. Set these
+# before project() so CMake passes a consistent SDK and deployment target to all
+# targets and fetched dependencies.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "27.0" CACHE STRING "Minimum macOS deployment version")
+if(CMAKE_HOST_APPLE AND NOT DEFINED CMAKE_OSX_SYSROOT)
+  execute_process(
+    COMMAND xcrun --sdk macosx --show-sdk-path
+    OUTPUT_VARIABLE STARSHIP_MACOS_SDK_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(STARSHIP_MACOS_SDK_PATH)
+    set(CMAKE_OSX_SYSROOT "${STARSHIP_MACOS_SDK_PATH}" CACHE PATH "macOS SDK path")
+  endif()
+endif()
+
 # Set the project version and language
 project(Starship VERSION 2.0.0 LANGUAGES C CXX ASM)
 include(FetchContent)
@@ -23,9 +39,6 @@ set(PROJECT_TEAM "SonicDcer & Lywx" CACHE STRING "" FORCE)
 if(APPLE)
   enable_language(OBJCXX)
 endif()
-
-# Set the minimum version of CMake and the deployment target for macOS
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version")
 
 # Set the C++ standard and enable the MSVC parallel build option
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
