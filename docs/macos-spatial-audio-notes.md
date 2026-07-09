@@ -28,7 +28,17 @@ The native macOS backend uses AudioToolbox with SDL-style queue semantics. Stere
 - head tracking enabled through `kAudioUnitProperty_SpatialMixerEnableHeadTracking`
 - personalized HRTF mode set to system-auto
 
-The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels. It is diagnostic and future plumbing for object work; the current audible signal is still the finished 5.1 bed.
+The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels.
+
+The backend also has a first positional object path for macOS 5.1:
+
+- bus 0 remains the 5.1 ambience bed
+- buses 1-16 are mono `AUSpatialMixer` point-source inputs, one per SFX sequencer channel
+- moving SFX with non-default `sfxSource` pointers are copied from `DMEM_TEMP` after final resample/gain and before `AudioSynth_ProcessEnvelope` bakes pan into the bed
+- `x/y/z` positions come from the same listener-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
+- default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
+
+This is positional object augmentation, not Dolby Atmos. The objectized SFX are still present in the bed path today; a later cleanup can fold accepted object SFX out of the bed once the object path is verified in real gameplay.
 
 ## What Atmos-Style Work Actually Requires
 
@@ -69,9 +79,10 @@ The current native backend is built around SDL-style queue semantics and AudioTo
 For real object motion, add mono point-source inputs to `AUSpatialMixer` and feed them pre-pan SFX sample streams. Do not try to recover object audio by splitting the finished 5.1 bed. A practical implementation path is:
 
 - keep music, UI, voice, ambience, and low-priority legacy content in the bed
-- preserve per-note or per-SFX PCM for object candidates before `Audio_InitNoteSub` bakes pan into channel volumes
-- assign stable object buses from the active SFX table, using source id plus channel/index lifetime
+- preserve per-note or per-SFX PCM for object candidates before `AudioSynth_ProcessEnvelope` bakes pan into channel volumes
+- assign stable object buses from the active SFX table; the current macOS path maps SFX channel `0..15` to SpatialMixer buses `1..16`
 - update `kSpatialMixerParam_Azimuth`, `kSpatialMixerParam_Elevation`, `kSpatialMixerParam_Distance`, `kSpatialMixerParam_Gain`, and reverb blend per object bus
+- remove accepted object SFX from the bed only after the object path is verified; do not mute the bed first and risk silent gameplay SFX
 - fold objects back into the bed deterministically when bus budget is exhausted
 - keep AirPods head tracking as a listener transform, not as a substitute for source coordinates
 

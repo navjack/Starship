@@ -59,6 +59,7 @@ void aFilterImpl(uint8_t flags, uint16_t count_or_buf, int16_t* state_or_filter)
 void aHiLoGainImpl(uint8_t g, uint16_t count, uint16_t addr);
 void aUnkCmd3Impl(uint16_t a, uint16_t b, uint16_t c);
 void aUnkCmd19Impl(uint8_t f, uint16_t count, uint16_t out_addr, uint16_t in_addr);
+void AudioMixer_CopyDmemS16(uint16_t source_addr, int16_t* dest_addr, uint32_t sample_count);
 
 #define aSegment(pkt, s, b) \
     do {                    \

@@ -162,6 +162,10 @@ void aSaveBufferImpl(uint16_t source_addr, int16_t* dest_addr, uint16_t nbytes) 
     memcpy(dest_addr, BUF_S16(source_addr), ROUND_DOWN_16(nbytes));
 }
 
+void AudioMixer_CopyDmemS16(uint16_t source_addr, int16_t* dest_addr, uint32_t sample_count) {
+    memcpy(dest_addr, BUF_S16(source_addr), sample_count * sizeof(int16_t));
+}
+
 void aLoadADPCMImpl(int num_entries_times_16, const int16_t* book_source_addr) {
     memcpy(rspa.adpcm_table, book_source_addr, num_entries_times_16);
 }

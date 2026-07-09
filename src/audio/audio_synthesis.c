@@ -1,6 +1,7 @@
 #include "sys.h"
 #include "sf64audio_provisional.h"
 #include "audio/mixer.h"
+#include "audio/audio_spatial_objects.h"
 #include "endianness.h"
 #include "port/Engine.h"
 
@@ -1239,6 +1240,8 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSubEu* noteSub, NoteSynthesisSta
         }
         aHiLoGain(aList++, gain, (aiBufLen + SAMPLES_PER_FRAME) * SAMPLE_SIZE, DMEM_TEMP, 0);
     }
+
+    AudioSpatial_TrySubmitNoteObjectPcm(noteIndex, noteSub, DMEM_TEMP, aiBufLen);
 
     if ((noteSub->leftDelaySize != 0) || (synthState->prevHaasEffectLeftDelaySize != 0)) {
         delaySide = HAAS_EFFECT_DELAY_LEFT;
