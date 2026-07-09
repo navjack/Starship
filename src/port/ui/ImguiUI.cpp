@@ -265,7 +265,7 @@ void DrawSettingsMenu(){
             static std::unordered_map<Ship::AudioBackend, const char*> audioBackendNames = {
                     { Ship::AudioBackend::WASAPI, "Windows Audio Session API" },
                     { Ship::AudioBackend::SDL, "SDL" },
-                    { Ship::AudioBackend::MACOS_AVFOUNDATION, "macOS AVFoundation" },
+                    { Ship::AudioBackend::MACOS_SPATIAL, "macOS Spatial Audio" },
             };
 
             ImGui::Text("Audio API (Needs reload)");

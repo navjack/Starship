@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
-# macOS 27 APIs are required by the native spatial-audio backend. Set these
-# before project() so CMake passes a consistent SDK and deployment target to all
-# targets and fetched dependencies.
-set(CMAKE_OSX_DEPLOYMENT_TARGET "27.0" CACHE STRING "Minimum macOS deployment version")
+# Build against the newest macOS SDK available so the native spatial-audio
+# backend can use current system features, but keep the shipped runtime floor at
+# macOS 26 for this fork.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0" CACHE STRING "Minimum macOS deployment version" FORCE)
 if(CMAKE_HOST_APPLE AND NOT DEFINED CMAKE_OSX_SYSROOT)
   execute_process(
     COMMAND xcrun --sdk macosx --show-sdk-path
