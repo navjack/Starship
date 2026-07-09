@@ -28,15 +28,16 @@ The native macOS backend uses AudioToolbox with SDL-style queue semantics. Stere
 - head tracking enabled through `kAudioUnitProperty_SpatialMixerEnableHeadTracking`
 - personalized HRTF mode set to system-auto
 
-The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels. In the current path, positions are already listener-relative, so the listener angles are diagnostic/future world-space data and are not applied as `AUSpatialMixer` head yaw/pitch/roll.
+The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, legacy view-relative position, optional ship-relative position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels. The legacy `x/y/z` values remain camera/view-relative because the original panner and bed mixer depend on that convention. Object audio uses the optional ship-relative coordinates when available.
 
 The backend also has a first positional object path for macOS 5.1:
 
 - bus 0 remains the 5.1 ambience bed
 - buses 1-16 are mono `AUSpatialMixer` point-source inputs, one per SFX sequencer channel
 - moving SFX with non-default `sfxSource` pointers are copied from `DMEM_TEMP` after final resample/gain and before `AudioSynth_ProcessEnvelope` bakes pan into the bed
-- `x/y/z` positions come from the same listener-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
-- `AUSpatialMixer` global head yaw/pitch/roll stay at zero for these listener-relative object coordinates; AirPods head tracking then applies the user's physical head motion as the only extra rotation
+- legacy `x/y/z` positions come from the same view-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
+- ship-relative object coordinates are stored in a fixed source registry keyed by the existing `sfxSource` pointer whenever the game knows the object's world position; direct object-position helpers, central actor/boss/effect/item/scenery draw paths, and projectile updates publish these coordinates
+- `AUSpatialMixer` global head yaw/pitch/roll stay at zero for object coordinates; AirPods head tracking then applies the user's physical head motion as the only extra rotation
 - player projectile launch sounds use the projectile `sfxSource`, and active projectile sources are refreshed from their visual object position during `PlayerShot_UpdateShot`
 - default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
 - accepted object SFX update their normal envelope state but skip `aEnvMixer` for that audio slice, so the sound is owned by the object bus instead of duplicated in the bed
@@ -103,6 +104,7 @@ Useful checks:
 - macOS spatial stereo: menu music audible, first render request logged, first natural nonzero PCM logged
 - macOS spatial 5.1: six-channel init logged with `AudioUnit_5_1 L R C LFE Ls Rs`, natural nonzero PCM logged, AirPods Spatial Audio controls remain exposed
 - macOS object path: in real gameplay, look for `macOS spatial backend SFX object PCM` and `macOS spatial backend first object render request`; the object PCM line includes `xyz`, `azimuth`, `elevation`, and `distanceHint`
+- macOS object path: accepted object PCM logs include `positionSpace=ship-relative` when the new ship-centered source coordinates are active, or `positionSpace=legacy-view` for sources that still only have legacy coordinates
 - macOS object path: the backend logs the first 8 accepted object PCM blocks by default; set `STARSHIP_SPATIAL_OBJECT_LOG_LIMIT` to a higher integer before launch if a longer human-test trace is needed
 - packaged app: `codesign --verify --deep --strict --verbose=2 Starship.app`
 - packaged app: `otool -l Starship.app/Contents/MacOS/Starship` reports `minos 26.0`

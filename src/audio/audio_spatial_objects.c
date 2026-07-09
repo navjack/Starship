@@ -9,6 +9,7 @@
 #include <stddef.h>
 
 #define SPATIAL_OBJECT_PCM_MAX_FRAMES 1024
+#define SPATIAL_SOURCE_POSITION_SLOTS 256
 
 extern SfxBankEntry sSfxBanks[5][20];
 extern ActiveSfx sActiveSfx[5][8];
@@ -18,7 +19,75 @@ extern SfxChannelState sSfxChannelState[16];
 extern f32 gDefaultSfxSource[3];
 extern s32 sAudioFrameCounter;
 
+typedef struct AudioSpatialSourcePosition {
+    f32* sfxSource;
+    f32 x;
+    f32 y;
+    f32 z;
+} AudioSpatialSourcePosition;
+
 static s16 sSpatialObjectPcmScratch[SPATIAL_OBJECT_PCM_MAX_FRAMES];
+static AudioSpatialSourcePosition sSpatialSourcePositions[SPATIAL_SOURCE_POSITION_SLOTS];
+static size_t sSpatialSourcePositionCursor = 0;
+
+static AudioSpatialSourcePosition* AudioSpatial_FindSourcePositionSlot(f32* sfxSource) {
+    size_t i;
+
+    if (sfxSource == NULL) {
+        return NULL;
+    }
+
+    for (i = 0; i < ARRAY_COUNT(sSpatialSourcePositions); i++) {
+        if (sSpatialSourcePositions[i].sfxSource == sfxSource) {
+            return &sSpatialSourcePositions[i];
+        }
+    }
+
+    return NULL;
+}
+
+void AudioSpatial_SetSourceShipRelativePosition(f32* sfxSource, f32 x, f32 y, f32 z) {
+    AudioSpatialSourcePosition* slot;
+
+    if ((sfxSource == NULL) || (sfxSource == gDefaultSfxSource)) {
+        return;
+    }
+
+    slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
+    if (slot == NULL) {
+        slot = &sSpatialSourcePositions[sSpatialSourcePositionCursor];
+        sSpatialSourcePositionCursor = (sSpatialSourcePositionCursor + 1) % ARRAY_COUNT(sSpatialSourcePositions);
+        slot->sfxSource = sfxSource;
+    }
+
+    slot->x = x;
+    slot->y = y;
+    slot->z = z;
+}
+
+void AudioSpatial_ClearSourceShipRelativePosition(f32* sfxSource) {
+    AudioSpatialSourcePosition* slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
+
+    if (slot != NULL) {
+        slot->sfxSource = NULL;
+        slot->x = 0.0f;
+        slot->y = 0.0f;
+        slot->z = 0.0f;
+    }
+}
+
+bool AudioSpatial_GetSourceShipRelativePosition(f32* sfxSource, f32* x, f32* y, f32* z) {
+    AudioSpatialSourcePosition* slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
+
+    if ((slot == NULL) || (x == NULL) || (y == NULL) || (z == NULL)) {
+        return false;
+    }
+
+    *x = slot->x;
+    *y = slot->y;
+    *z = slot->z;
+    return true;
+}
 
 static bool AudioSpatial_GetSfxChannelIndexForNote(s32 noteIndex, u8* channelIndex) {
     Note* note;
@@ -88,6 +157,8 @@ static bool AudioSpatial_FindSourceForSfxChannel(u8 channelIndex, StarshipSpatia
             source->x = *entry->xPos;
             source->y = (entry->yPos != NULL) ? *entry->yPos : 0.0f;
             source->z = (entry->zPos != NULL) ? *entry->zPos : 0.0f;
+            source->hasShipRelativePosition =
+                AudioSpatial_GetSourceShipRelativePosition(entry->xPos, &source->shipX, &source->shipY, &source->shipZ);
             source->distance = entry->distance;
             source->gain = channelState->volMod;
             source->pan = channelState->pan;

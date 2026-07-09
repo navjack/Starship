@@ -18,6 +18,7 @@
 #include "assets/ast_training.h"
 #include "assets/ast_versus.h"
 #include "assets/ast_zoness.h"
+#include "audio/audio_spatial_objects.h"
 #include "port/hooks/Events.h"
 
 s32 D_enmy_Timer_80161670[4];
@@ -92,6 +93,7 @@ void Object_PlayerSfx(f32* pos, u32 sfxId, s32 playerNum) {
 
 void Object_Kill(Object* obj, f32* sfxSrc) {
     obj->status = OBJ_FREE;
+    AudioSpatial_ClearSourceShipRelativePosition(sfxSrc);
     Audio_KillSfxBySource(sfxSrc);
 }
 

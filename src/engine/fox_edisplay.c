@@ -27,8 +27,11 @@
 #include "assets/ast_enmy_planet.h"
 #include "assets/ast_ve1_boss.h"
 #include "assets/ast_zoness.h"
+#include "audio/audio_spatial_objects.h"
 #include "port/interpolation/FrameInterpolation.h"
 #include "port/hooks/Events.h"
+
+static void Object_SetSpatialSfxSourceToPos(f32* sfxSrc, Vec3f* pos);
 
 Vec3f D_edisplay_801615D0;
 Vec3f sViewPos;
@@ -1166,6 +1169,7 @@ void Actor_DrawOnRails(Actor* this) {
             }
         }
     }
+    Object_SetSpatialSfxSourceToPos(this->sfxSource, &this->obj.pos);
 }
 
 void Actor_DrawAllRange(Actor* this) {
@@ -1280,6 +1284,7 @@ void Actor_DrawAllRange(Actor* this) {
     }
 
     Object_SetSfxSourceToView(this->sfxSource, &sViewPos);
+    Object_SetSpatialSfxSourceToPos(this->sfxSource, &this->obj.pos);
     this->iwork[24] = sDrewActor;
 }
 
@@ -1303,6 +1308,7 @@ void Boss_Draw(Boss* this, s32 arg1) {
 
     Matrix_MultVec3f(&D_edisplay_801615F0, &origin, &D_edisplay_801615D0);
     Object_SetSfxSourceToView(this->sfxSource, &D_edisplay_801615D0);
+    Object_SetSpatialSfxSourceToPos(this->sfxSource, &this->obj.pos);
 
     if ((this->obj.id == OBJ_BOSS_KA_SAUCERER) || (this->obj.id == OBJ_BOSS_KA_FLBASE)) {
         var_fa1 = 6000.0f;
@@ -1429,6 +1435,7 @@ void Effect_DrawAllRange(Effect* this) {
     }
 
     Object_SetSfxSourceToView(this->sfxSource, &dest);
+    Object_SetSpatialSfxSourceToPos(this->sfxSource, &this->obj.pos);
 
     if (!drawn && (this->obj.id != OBJ_EFFECT_CLOUDS) && (this->obj.id != OBJ_EFFECT_TIMED_SFX) && (!gVersusMode)) {
         Object_Kill(&this->obj, this->sfxSource);
@@ -1470,6 +1477,7 @@ void Item_Draw(Item* this, s32 arg1) {
     }
 
     Object_SetSfxSourceToView(this->sfxSource, &dest);
+    Object_SetSpatialSfxSourceToPos(this->sfxSource, &this->obj.pos);
 
     if (!drawn && (gLevelMode == LEVELMODE_ALL_RANGE) && (gCamCount == 1) && (this->obj.id < OBJ_ITEM_GOLD_RING) &&
         (gCurrentLevel != LEVEL_VENOM_ANDROSS)) {
@@ -1575,6 +1583,33 @@ void Object_ClampSfxSource(f32* sfxSrc) {
     }
 }
 
+static void Object_SetSpatialSfxSourceToPos(f32* sfxSrc, Vec3f* pos) {
+    Player* player;
+    Vec3f src;
+    Vec3f dest;
+    f32 clamped[3];
+
+    if ((sfxSrc == NULL) || (pos == NULL) || (gCamCount != 1) || (gPlayer == NULL)) {
+        AudioSpatial_ClearSourceShipRelativePosition(sfxSrc);
+        return;
+    }
+
+    player = &gPlayer[0];
+    Matrix_RotateY(gCalcMatrix, (player->rot.y + player->yRot_114) * M_DTOR, MTXF_NEW);
+    Matrix_RotateX(gCalcMatrix, (player->rot.x + player->xRot_120 + player->aerobaticPitch) * M_DTOR, MTXF_APPLY);
+
+    src.x = pos->x - player->pos.x;
+    src.y = pos->y - player->pos.y;
+    src.z = pos->z - player->trueZpos;
+    Matrix_MultVec3fNoTranslate(gCalcMatrix, &src, &dest);
+
+    clamped[0] = dest.x;
+    clamped[1] = dest.y;
+    clamped[2] = dest.z;
+    Object_ClampSfxSource(clamped);
+    AudioSpatial_SetSourceShipRelativePosition(sfxSrc, clamped[0], clamped[1], clamped[2]);
+}
+
 void Object_SetSfxSourceToPos(f32* sfxSrc, Vec3f* pos) {
     Vec3f src;
     Vec3f dest;
@@ -1593,6 +1628,7 @@ void Object_SetSfxSourceToPos(f32* sfxSrc, Vec3f* pos) {
         sfxSrc[2] = dest.z;
     }
     Object_ClampSfxSource(sfxSrc);
+    Object_SetSpatialSfxSourceToPos(sfxSrc, pos);
 }
 
 void Object_UpdateSfxSource(f32* sfxSrc) {
@@ -1826,6 +1862,7 @@ void Object_DrawAll(s32 cullDirection) {
                 Scenery_Draw(scenery, cullDirection);
                 Matrix_Pop(&gGfxMatrix);
                 Object_UpdateSfxSource(scenery->sfxSource);
+                Object_SetSpatialSfxSourceToPos(scenery->sfxSource, &scenery->obj.pos);
 
                 FrameInterpolation_RecordCloseChild();
             }
@@ -1984,6 +2021,7 @@ void Effect_DrawAll(s32 arg0) {
                 Effect_DrawOnRails(effect, arg0);
                 Matrix_Pop(&gGfxMatrix);
                 Object_UpdateSfxSource(effect->sfxSource);
+                Object_SetSpatialSfxSourceToPos(effect->sfxSource, &effect->obj.pos);
                 if (effect->obj.id == OBJ_EFFECT_374) {
                     Matrix_Push(&gGfxMatrix);
                     Object_DrawShadow(i, &effect->obj);

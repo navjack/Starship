@@ -3,6 +3,7 @@
 #include "sf64context.h"
 #include "audiothread_cmd.h"
 #include "audioseq_cmd.h"
+#include "audio/audio_spatial_objects.h"
 #include "port/Engine.h"
 #include "public/bridge/audiobridge.h"
 
@@ -1851,6 +1852,8 @@ static void Audio_SubmitSpatialAudioFrame(void) {
             source->x = (entry->xPos != NULL) ? *entry->xPos : 0.0f;
             source->y = (entry->yPos != NULL) ? *entry->yPos : 0.0f;
             source->z = (entry->zPos != NULL) ? *entry->zPos : 0.0f;
+            source->hasShipRelativePosition =
+                AudioSpatial_GetSourceShipRelativePosition(entry->xPos, &source->shipX, &source->shipY, &source->shipZ);
             source->distance = entry->distance;
             source->gain = channelState->volMod;
             source->pan = channelState->pan;
