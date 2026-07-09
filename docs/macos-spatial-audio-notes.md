@@ -39,6 +39,7 @@ The backend also has a first positional object path for macOS 5.1:
 - default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
 - accepted object SFX update their normal envelope state but skip `aEnvMixer` for that audio slice, so the sound is owned by the object bus instead of duplicated in the bed
 - if the native backend is unavailable or cannot queue the whole PCM block, the object submit fails and the legacy bed mix runs unchanged
+- object bus ownership is tied to the SFX channel plus source token; when a channel is reused before the prior object's queued PCM drains, the new SFX remains in the bed instead of retargeting old object audio to a new position
 
 This is positional object augmentation, not Dolby Atmos.
 

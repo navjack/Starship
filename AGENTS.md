@@ -12,4 +12,6 @@ Do not describe the current 5.1 bed as Dolby Atmos. The engine invariant is stil
 
 Objectized SFX are copied before pan is baked. When the native backend accepts the full PCM block, that note updates envelope state but skips the legacy bed mix for that audio slice. If the backend is unavailable or cannot queue the block, the SFX stays in the bed path for deterministic fallback.
 
+Object buses are keyed by SFX channel and source token. If a channel is reused while the previous object's PCM is still queued, the new SFX must remain in the bed until the object bus drains; do not retarget queued object PCM to a different source.
+
 For future Atmos-style work, read [docs/macos-spatial-audio-notes.md](docs/macos-spatial-audio-notes.md) before touching the mixer or macOS backend.
