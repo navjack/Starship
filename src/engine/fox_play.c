@@ -3086,6 +3086,7 @@ void Player_SetupArwingShot(Player* player, PlayerShot* shot, f32 arg2, f32 arg3
     }
 
     shot->sourceId = player->num;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 }
 
 void Player_SetupTankShot(Player* player, PlayerShot* shot, PlayerShotId shotId, f32 speed) {
@@ -3136,6 +3137,7 @@ void Player_SetupTankShot(Player* player, PlayerShot* shot, PlayerShotId shotId,
     shot->timer = 40;
     shot->obj.id = shotId;
     shot->sourceId = player->num;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 
     if (shotId == PLAYERSHOT_LOCK_ON) {
         if (speed <= 65.0f) {

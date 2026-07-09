@@ -57,6 +57,7 @@ void PlayerShot_ExplodeBomb(PlayerShot* shot) {
         shot->unk_5C = 1;
         shot->timer = 30;
         shot->unk_58 = 150;
+        Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
         Audio_PlayBombExplodeSfx(shot->sourceId, shot->sfxSource);
         gScreenFlashTimer = 4;
         if (shot->obj.pos.y < (gGroundHeight + 450.0f)) {
@@ -182,6 +183,7 @@ void PlayerShot_SetupEffect344(Effect* effect, f32 xPos, f32 yPos, f32 zPos, f32
     effect->unk_46 = 80;
     effect->timer_50 = time;
     Object_SetInfo(&effect->info, effect->obj.id);
+    Object_SetSfxSourceToPos(effect->sfxSource, &effect->obj.pos);
     Play_PlaySfxNoPlayer(effect->sfxSource, NA_SE_EXPLOSION_S);
 }
 
@@ -212,6 +214,7 @@ void PlayerShot_LaserMark1_Setup(Effect* effect, f32 xPos, f32 yPos, f32 zPos, f
     effect->scale2 = scale * 0.5f;
     effect->timer_50 = 80;
     Object_SetInfo(&effect->info, effect->obj.id);
+    Object_SetSfxSourceToPos(effect->sfxSource, &effect->obj.pos);
     Play_PlaySfxNoPlayer(effect->sfxSource, NA_SE_EXPLOSION_S);
 }
 

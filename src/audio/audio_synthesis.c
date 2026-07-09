@@ -70,7 +70,7 @@ Acmd* AudioSynth_LoadWaveSamples(Acmd* aList, NoteSubEu* noteSub, NoteSynthesisS
 Acmd* AudioSynth_FinalResample(Acmd* aList, NoteSynthesisState* synthState, s32 size, u16 pitch, u16 inpDmem,
                                u32 resampleFlags);
 Acmd* AudioSynth_ProcessEnvelope(Acmd* aList, NoteSubEu* noteSub, NoteSynthesisState* synthState, s32 aiBufLen,
-                                 u16 dmemSrc, s32 delaySide, s32 flags);
+                                 u16 dmemSrc, s32 delaySide, s32 flags, bool mixToBed);
 Acmd* AudioSynth_ApplyHaasEffect(Acmd* aList, NoteSubEu* noteSub, NoteSynthesisState* synthState, s32 size, s32 flags,
                                  s32 delaySide);
 
@@ -1241,7 +1241,7 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSubEu* noteSub, NoteSynthesisSta
         aHiLoGain(aList++, gain, (aiBufLen + SAMPLES_PER_FRAME) * SAMPLE_SIZE, DMEM_TEMP, 0);
     }
 
-    AudioSpatial_TrySubmitNoteObjectPcm(noteIndex, noteSub, DMEM_TEMP, aiBufLen);
+    bool spatialObjectAccepted = AudioSpatial_TrySubmitNoteObjectPcm(noteIndex, noteSub, DMEM_TEMP, aiBufLen);
 
     if ((noteSub->leftDelaySize != 0) || (synthState->prevHaasEffectLeftDelaySize != 0)) {
         delaySide = HAAS_EFFECT_DELAY_LEFT;
@@ -1251,8 +1251,9 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSubEu* noteSub, NoteSynthesisSta
         delaySide = HAAS_EFFECT_DELAY_NONE;
     }
 
-    aList = AudioSynth_ProcessEnvelope(aList, noteSub, synthState, aiBufLen, DMEM_TEMP, delaySide, flags);
-    if (noteSub->bitField0.usesHeadsetPanEffects) {
+    aList = AudioSynth_ProcessEnvelope(aList, noteSub, synthState, aiBufLen, DMEM_TEMP, delaySide, flags,
+                                       !spatialObjectAccepted);
+    if (!spatialObjectAccepted && noteSub->bitField0.usesHeadsetPanEffects) {
         if (!(flags & 1)) {
             flags = 0;
         }
@@ -1299,7 +1300,7 @@ Acmd* AudioSynth_FinalResample(Acmd* aList, NoteSynthesisState* synthState, s32 
 }
 
 Acmd* AudioSynth_ProcessEnvelope(Acmd* aList, NoteSubEu* noteSub, NoteSynthesisState* synthState, s32 aiBufLen,
-                                 u16 dmemSrc, s32 delaySide, s32 flags) {
+                                 u16 dmemSrc, s32 delaySide, s32 flags, bool mixToBed) {
     s16 rampReverb;
     s16 rampRight = 0, rampLeft = 0, rampCenter = 0, rampLfe = 0, rampRLeft = 0, rampRRight = 0;
     u16 panVolLeft, panVolRight, panVolCenter, panVolLfe, panVolRLeft, panVolRRight;
@@ -1358,6 +1359,10 @@ Acmd* AudioSynth_ProcessEnvelope(Acmd* aList, NoteSubEu* noteSub, NoteSynthesisS
     synthState->curVolRLeft = curVolRLeft + (rampRLeft * aiBufLenSmall);
     synthState->curVolRRight = curVolRRight + (rampRRight * aiBufLenSmall);
     uint32_t cutoffFreqLfe = CVarGetInteger("gSubwooferThreshold", 80);
+
+    if (!mixToBed) {
+        return aList;
+    }
 
     if (noteSub->bitField0.usesHeadsetPanEffects) {
         int32_t num_audio_channels = 2;

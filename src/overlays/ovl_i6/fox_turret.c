@@ -52,6 +52,7 @@ void Turret_SetupShot(Player* player, PlayerShot* shot, f32 xOffset, f32 yOffset
     shot->scale = 1.5f;
 
     shot->sourceId = player->num;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 }
 
 void Turret_GreatFoxLaser(Player* player, f32 xOffset) {

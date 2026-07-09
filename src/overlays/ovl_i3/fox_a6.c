@@ -2152,6 +2152,7 @@ void Area6_8018D3CC(s32 arg0, f32 xPos, f32 yPos, f32 zPos, f32 xVel, f32 yVel, 
             gPlayerShots[i].timer = 150;
             gPlayerShots[i].sourceId = CS_SHOT_ID;
 
+            Object_SetSfxSourceToPos(gPlayerShots[i].sfxSource, &gPlayerShots[i].obj.pos);
             AUDIO_PLAY_SFX(NA_SE_ARWING_SHOT_F, gPlayerShots[i].sfxSource, 4);
             break;
         }

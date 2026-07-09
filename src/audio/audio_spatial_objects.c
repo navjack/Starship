@@ -130,31 +130,31 @@ static float AudioSpatial_GetObjectPcmGain(const NoteSubEu* noteSub) {
     return gain;
 }
 
-void AudioSpatial_TrySubmitNoteObjectPcm(s32 noteIndex, NoteSubEu* noteSub, u16 dmemSrc, s32 frameCount) {
+bool AudioSpatial_TrySubmitNoteObjectPcm(s32 noteIndex, NoteSubEu* noteSub, u16 dmemSrc, s32 frameCount) {
     u8 channelIndex;
     StarshipSpatialAudioObjectPcm objectPcm = { 0 };
 
     if ((frameCount <= 0) || (frameCount > SPATIAL_OBJECT_PCM_MAX_FRAMES) ||
         !AudioPlayerSupportsSpatialAudioObjectPcm()) {
-        return;
+        return false;
     }
 
     if (!AudioSpatial_GetSfxChannelIndexForNote(noteIndex, &channelIndex)) {
-        return;
+        return false;
     }
 
     if (!AudioSpatial_FindSourceForSfxChannel(channelIndex, &objectPcm.source)) {
-        return;
+        return false;
     }
 
     objectPcm.sampleGain = AudioSpatial_GetObjectPcmGain(noteSub);
     if (objectPcm.sampleGain <= 0.0f) {
-        return;
+        return false;
     }
 
     AudioMixer_CopyDmemS16(dmemSrc, sSpatialObjectPcmScratch, frameCount);
     objectPcm.frameId = sAudioFrameCounter;
     objectPcm.frameCount = frameCount;
     objectPcm.samples = sSpatialObjectPcmScratch;
-    AudioPlayerSubmitSpatialAudioObjectPcm(&objectPcm);
+    return AudioPlayerSubmitSpatialAudioObjectPcm(&objectPcm);
 }

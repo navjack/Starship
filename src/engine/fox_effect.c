@@ -962,6 +962,7 @@ void Effect_Effect383_Setup(Effect383* this, f32 xPos, f32 yPos, f32 zPos, f32 s
     this->obj.pos.y = yPos;
     this->obj.pos.z = zPos;
 
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     AUDIO_PLAY_SFX(NA_SE_EN_STAR_EXPLOSION, this->sfxSource, 4);
     Object_SetInfo(&this->info, this->obj.id);
 }
@@ -988,6 +989,7 @@ void Effect_SetupTimedSfxAtPos(TimedSfx* this, Vec3f* pos, u32 sfxId) {
     this->obj.pos.z = pos->z;
 
     this->timer_50 = 50;
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
 
     if ((sfxId == NA_SE_OB_EXPLOSION_S) || (sfxId == NA_SE_OB_SMOKE)) {
         AUDIO_PLAY_SFX(sfxId, this->sfxSource, 0);
@@ -1236,6 +1238,7 @@ void Effect_Effect381_Setup(Effect381* this, f32 xPos, f32 yPos, f32 zPos, f32 s
     this->unk_44 = 255;
     this->scale1 = scale1;
     Object_SetInfo(&this->info, this->obj.id);
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     AUDIO_PLAY_SFX(NA_SE_SPLASH_LEVEL_L, this->sfxSource, 0);
 }
 
@@ -2245,6 +2248,7 @@ void Effect_Effect374_Update(Effect374* this) {
                 this->unk_44 = 192;
                 this->scale2 = 2.5f;
                 this->scale1 = 2.5f;
+                Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
                 AUDIO_PLAY_SFX(NA_SE_EN_EXPLOSION_M, this->sfxSource, 4);
                 func_effect_8007D0E0(this->obj.pos.x, this->obj.pos.y + 30.0f, this->obj.pos.z, 7.0f);
                 Effect386_Spawn1(this->obj.pos.x, this->obj.pos.y + 30.0f, this->obj.pos.z, 0.0f, 0.0f, 0.0f, 4.0f, 5);
@@ -2465,6 +2469,7 @@ void func_effect_8007E6B8(Effect* this, u32 objId, f32 xPos, f32 yPos, f32 zPos,
         this->obj.rot.y = RAD_TO_DEG(sp50);
     }
 
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     if (objId == OBJ_EFFECT_356) {
         AUDIO_PLAY_SFX(NA_SE_EN_ENERGY_BEAM, this->sfxSource, 4);
     }
@@ -2519,6 +2524,7 @@ void func_effect_8007E93C(Effect* this, u32 objId, f32 xPos, f32 yPos, f32 zPos,
         this->obj.rot.y = RAD_TO_DEG(sp50);
     }
 
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     if (objId == OBJ_EFFECT_356) {
         AUDIO_PLAY_SFX(NA_SE_EN_ENERGY_BEAM, this->sfxSource, 4);
     }
@@ -2552,6 +2558,7 @@ void func_effect_8007EBB8(Effect* this, ObjectId objId, f32 xPos, f32 yPos, f32 
 
     this->scale2 = scale2;
 
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     if (objId == OBJ_EFFECT_355) {
         AUDIO_PLAY_SFX(NA_SE_EN_ENERGY_BEAM, this->sfxSource, 4);
     } else {
@@ -2600,6 +2607,7 @@ void func_effect_8007ED54(Effect* this, ObjectId objId, f32 xPos, f32 yPos, f32 
 
     this->scale2 = scale2;
 
+    Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
     if (this->obj.id != OBJ_EFFECT_380) {
         AUDIO_PLAY_SFX(NA_SE_EN_SHOT_0, this->sfxSource, 4);
     }
@@ -3438,6 +3446,7 @@ void func_effect_8008165C(Effect395* this, f32 xPos, f32 yPos, f32 zPos, f32 sca
 
         case 10:
             this->timer_50 = 10;
+            Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
             AUDIO_PLAY_SFX(NA_SE_EN_A6BOSS_BEAM, this->sfxSource, 4);
             break;
 
@@ -3459,6 +3468,7 @@ void func_effect_8008165C(Effect395* this, f32 xPos, f32 yPos, f32 zPos, f32 sca
             this->obj.pos.y = yPos;
             this->obj.pos.z = zPos;
 
+            Object_SetSfxSourceToPos(this->sfxSource, &this->obj.pos);
             AUDIO_PLAY_SFX(NA_SE_EN_STAR_EXPLOSION, this->sfxSource, 4);
             gControllerRumbleTimers[0] = 60;
             break;

@@ -1716,6 +1716,7 @@ void Actor_SetupPlayerShot(PlayerShotId objId, PlayerShot* shot, s32 actorId, f3
         shot->timer = 30;
     }
     shot->sourceId = actorId + NPC_SHOT_ID;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 
     if (gLevelMode == LEVELMODE_ALL_RANGE) {
         if (actorId + NPC_SHOT_ID <= AI360_PEPPY + NPC_SHOT_ID) {

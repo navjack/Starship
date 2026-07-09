@@ -37,8 +37,10 @@ The backend also has a first positional object path for macOS 5.1:
 - moving SFX with non-default `sfxSource` pointers are copied from `DMEM_TEMP` after final resample/gain and before `AudioSynth_ProcessEnvelope` bakes pan into the bed
 - `x/y/z` positions come from the same listener-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
 - default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
+- accepted object SFX update their normal envelope state but skip `aEnvMixer` for that audio slice, so the sound is owned by the object bus instead of duplicated in the bed
+- if the native backend is unavailable or cannot queue the whole PCM block, the object submit fails and the legacy bed mix runs unchanged
 
-This is positional object augmentation, not Dolby Atmos. The objectized SFX are still present in the bed path today; a later cleanup can fold accepted object SFX out of the bed once the object path is verified in real gameplay.
+This is positional object augmentation, not Dolby Atmos.
 
 ## What Atmos-Style Work Actually Requires
 
@@ -82,7 +84,7 @@ For real object motion, add mono point-source inputs to `AUSpatialMixer` and fee
 - preserve per-note or per-SFX PCM for object candidates before `AudioSynth_ProcessEnvelope` bakes pan into channel volumes
 - assign stable object buses from the active SFX table; the current macOS path maps SFX channel `0..15` to SpatialMixer buses `1..16`
 - update `kSpatialMixerParam_Azimuth`, `kSpatialMixerParam_Elevation`, `kSpatialMixerParam_Distance`, `kSpatialMixerParam_Gain`, and reverb blend per object bus
-- remove accepted object SFX from the bed only after the object path is verified; do not mute the bed first and risk silent gameplay SFX
+- remove accepted object SFX from the bed only when the backend confirms ownership of the whole PCM block; otherwise keep the bed path audible
 - fold objects back into the bed deterministically when bus budget is exhausted
 - keep AirPods head tracking as a listener transform, not as a substitute for source coordinates
 
