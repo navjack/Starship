@@ -36,6 +36,7 @@ The backend also has a first positional object path for macOS 5.1:
 - buses 1-16 are mono `AUSpatialMixer` point-source inputs, one per SFX sequencer channel
 - moving SFX with non-default `sfxSource` pointers are copied from `DMEM_TEMP` after final resample/gain and before `AudioSynth_ProcessEnvelope` bakes pan into the bed
 - `x/y/z` positions come from the same listener-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
+- player projectile launch sounds use the projectile `sfxSource`, and active projectile sources are refreshed from their visual object position during `PlayerShot_UpdateShot`
 - default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
 - accepted object SFX update their normal envelope state but skip `aEnvMixer` for that audio slice, so the sound is owned by the object bus instead of duplicated in the bed
 - if the native backend is unavailable or cannot queue the whole PCM block, the object submit fails and the legacy bed mix runs unchanged

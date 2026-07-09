@@ -2243,6 +2243,7 @@ void PlayerShot_UpdateShot(PlayerShot* shot, s32 index) {
     shot->obj.pos.x += shot->vel.x;
     shot->obj.pos.y += shot->vel.y;
     shot->obj.pos.z += shot->vel.z;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 
     switch (shot->obj.id) {
         case PLAYERSHOT_SINGLE_LASER:

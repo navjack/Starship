@@ -3155,7 +3155,7 @@ void Player_TankCannon(Player* player) {
         for (i = 0; i < ARRAY_COUNT(gPlayerShots) - 1; i++) {
             if (gPlayerShots[i].obj.status == SHOT_FREE) {
                 Player_SetupTankShot(player, &gPlayerShots[i], PLAYERSHOT_TANK, 100.0f);
-                Player_PlaySfx(player->sfxSource, NA_SE_TANK_SHOT, player->num);
+                Player_PlaySfx(gPlayerShots[i].sfxSource, NA_SE_TANK_SHOT, player->num);
                 player->unk_1A0 = 2;
                 break;
             }
@@ -3182,7 +3182,7 @@ void Player_ArwingLaser(Player* player) {
                 if (gPlayerShots[i].obj.status == SHOT_FREE) {
                     Player_SetupArwingShot(player, &gPlayerShots[i], 0.0f, 0.0f, PLAYERSHOT_SINGLE_LASER,
                                            400.0f / 3.0f);
-                    Player_PlaySfx(player->sfxSource, NA_SE_ARWING_SHOT, player->num);
+                    Player_PlaySfx(gPlayerShots[i].sfxSource, NA_SE_ARWING_SHOT, player->num);
                     gMuzzleFlashScale[player->num] = 0.5f;
                     break;
                 }
@@ -3196,10 +3196,10 @@ void Player_ArwingLaser(Player* player) {
                     Player_SetupArwingShot(player, &gPlayerShots[i], 0.0f, -10.0f, PLAYERSHOT_TWIN_LASER,
                                            400.0f / 3.0f);
                     if (laser == LASERS_TWIN) {
-                        Player_PlaySfx(player->sfxSource, NA_SE_ARWING_TWIN_LASER, player->num);
+                        Player_PlaySfx(gPlayerShots[i].sfxSource, NA_SE_ARWING_TWIN_LASER, player->num);
                         gMuzzleFlashScale[player->num] = 0.5f;
                     } else {
-                        Player_PlaySfx(player->sfxSource, NA_SE_ARWING_TWIN_LASER2, player->num);
+                        Player_PlaySfx(gPlayerShots[i].sfxSource, NA_SE_ARWING_TWIN_LASER2, player->num);
                         gMuzzleFlashScale[player->num] = 0.75f;
                     }
                     break;
@@ -3288,6 +3288,7 @@ void Player_SetupOnFootShot(Player* player, PlayerShot* shot, PlayerShotId shotI
     shot->unk_58 = 1;
 
     shot->sourceId = player->num;
+    Object_SetSfxSourceToPos(shot->sfxSource, &shot->obj.pos);
 }
 
 void Player_OnFootGun(Player* player) {
@@ -3296,7 +3297,7 @@ void Player_OnFootGun(Player* player) {
     for (i = 0; i < ARRAY_COUNT(gPlayerShots); i++) {
         if (gPlayerShots[i].obj.status == SHOT_FREE) {
             Player_SetupOnFootShot(player, &gPlayerShots[i], PLAYERSHOT_ON_FOOT);
-            Player_PlaySfx(player->sfxSource, NA_SE_TANK_SHOT, player->num);
+            Player_PlaySfx(gPlayerShots[i].sfxSource, NA_SE_TANK_SHOT, player->num);
             player->csTimer = 2;
             player->unk_180 = 10.0f;
             break;
@@ -3386,7 +3387,7 @@ bool Player_UpdateLockOn(Player* player) {
                         } else {
                             Player_SetupTankShot(player, &gPlayerShots[14 - player->num], PLAYERSHOT_LOCK_ON, 70.0f);
                         }
-                        Object_PlayerSfx(player->sfxSource, NA_SE_LOCK_ON_LASER, player->num);
+                        Player_PlaySfx(gPlayerShots[14 - player->num].sfxSource, NA_SE_LOCK_ON_LASER, player->num);
                         gControllerRumbleTimers[player->num] = 5;
                         return true;
                     }
@@ -3408,7 +3409,7 @@ bool Player_UpdateLockOn(Player* player) {
                     } else {
                         Player_SetupTankShot(player, &gPlayerShots[14 - player->num], PLAYERSHOT_LOCK_ON, 70.0f);
                     }
-                    Object_PlayerSfx(player->sfxSource, NA_SE_LOCK_ON_LASER, player->num);
+                    Player_PlaySfx(gPlayerShots[14 - player->num].sfxSource, NA_SE_LOCK_ON_LASER, player->num);
                     gChargeTimers[player->num] = 0;
                     gControllerRumbleTimers[player->num] = 5;
                     return true;
