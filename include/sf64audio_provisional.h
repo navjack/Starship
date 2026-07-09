@@ -946,7 +946,8 @@ typedef struct {
     /* 0x2A */ u8 prev;
     /* 0x2B */ u8 next;
     /* 0x2C */ u8 channelIndex;
-} SfxBankEntry; // size = 0x30
+    /* 0x30 */ u32 spatialInstanceId;
+} SfxBankEntry;
 
 typedef struct {
     /* 0x00 */ u32 sfxId;

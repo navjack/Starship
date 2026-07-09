@@ -150,6 +150,7 @@ static bool AudioSpatial_FindSourceForSfxChannel(u8 channelIndex, StarshipSpatia
 
             channelState = &sSfxChannelState[channelIndex];
             source->sfxId = entry->sfxId;
+            source->sourceInstanceId = entry->spatialInstanceId;
             source->bankId = bankId;
             source->channelIndex = channelIndex;
             source->token = entry->token;

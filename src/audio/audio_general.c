@@ -90,6 +90,7 @@ u8 sAudioResetStatus = AUDIORESET_READY;
 s32 D_800C5D5C = 0; // unused. file split?
 s8 sEnvReverb = 0;
 s8 sAudioSpecReverb = 0;
+static u32 sSpatialSfxInstanceCounter = 1;
 u8 sVolumeSettings[3] = { 99, 99, 99 };
 u8 sAudioSpecInstrumentSets[29][7] = {
     { 0, 3, 4, 80, 12, 21, 255 },    { 17, 18, 15, 96, 20, 22, 255 }, { 0, 3, 5, 80, 16, 255, 0 },
@@ -128,6 +129,18 @@ u32 sEventSfx[] = {
     NA_SE_OB_ROUTEGATE_CLOSE_S, NA_SE_OB_LIFT,
     NA_SE_OB_PLATE_ROLL,
 };
+
+static u32 Audio_NextSpatialSfxInstanceId(void) {
+    u32 instanceId = sSpatialSfxInstanceCounter++;
+
+    if (sSpatialSfxInstanceCounter == 0) {
+        sSpatialSfxInstanceCounter = 1;
+    }
+    if (instanceId == 0) {
+        instanceId = sSpatialSfxInstanceCounter++;
+    }
+    return instanceId;
+}
 SoundTestTrack sSoundTestTracks[] = {
     /*  0 */ { NA_BGM_OPENING, AUDIOSPEC_22 | (SFXCHAN_0 << 8), -1 },
     /*  1 */ { NA_BGM_TITLE, AUDIOSPEC_23 | (SFXCHAN_0 << 8), -1 },
@@ -1387,6 +1400,7 @@ void Audio_ProcessSfxRequest(void) {
                     sSfxBanks[bankId][next].freqMod = request->freqMod;
                     sSfxBanks[bankId][next].volMod = request->volMod;
                     sSfxBanks[bankId][next].reverbAdd = request->reverbAdd;
+                    sSfxBanks[bankId][next].spatialInstanceId = Audio_NextSpatialSfxInstanceId();
                 }
                 next = 0;
             }
@@ -1408,6 +1422,7 @@ void Audio_ProcessSfxRequest(void) {
         entry->sfxId = request->sfxId;
         entry->state = SFX_STATE(request->sfxId);
         entry->freshness = 2;
+        entry->spatialInstanceId = Audio_NextSpatialSfxInstanceId();
 
         entry->prev = sSfxBankListEnd[bankId];
 
@@ -1439,6 +1454,7 @@ void Audio_RemoveSfxBankEntry(u8 bankId, u8 entryIndex) {
     sfxBank[sSfxBankFreeListStart[bankId]].prev = entryIndex;
     sSfxBankFreeListStart[bankId] = entryIndex;
     sfxBank[entryIndex].state = 0;
+    sfxBank[entryIndex].spatialInstanceId = 0;
 }
 
 void Audio_ChooseActiveSfx(u8 bankId) {
@@ -1845,6 +1861,7 @@ static void Audio_SubmitSpatialAudioFrame(void) {
             channelState = &sSfxChannelState[entry->channelIndex];
             source = &frame.sources[frame.sourceCount++];
             source->sfxId = entry->sfxId;
+            source->sourceInstanceId = entry->spatialInstanceId;
             source->bankId = bankId;
             source->channelIndex = entry->channelIndex;
             source->token = entry->token;
@@ -1884,6 +1901,7 @@ void Audio_ResetSfx(void) {
 
     sSfxRequestWriteIndex = 0;
     sSfxRequestReadIndex = 0;
+    sSpatialSfxInstanceCounter = 1;
     sChannelMuteFlags = 0;
     for (i = 0; i < 5; i++) {
         sSfxBankListEnd[i] = 0;
