@@ -100,5 +100,7 @@ Useful checks:
 - SDL backend: menu music audible, first queue logged, first natural nonzero PCM logged
 - macOS spatial stereo: menu music audible, first render request logged, first natural nonzero PCM logged
 - macOS spatial 5.1: six-channel init logged with `AudioUnit_5_1 L R C LFE Ls Rs`, natural nonzero PCM logged, AirPods Spatial Audio controls remain exposed
+- macOS object path: in real gameplay, look for `macOS spatial backend SFX object PCM` and `macOS spatial backend first object render request`; the object PCM line includes `xyz`, `azimuth`, `elevation`, and `distanceHint`
+- macOS object path: the backend logs the first 8 accepted object PCM blocks by default; set `STARSHIP_SPATIAL_OBJECT_LOG_LIMIT` to a higher integer before launch if a longer human-test trace is needed
 - packaged app: `codesign --verify --deep --strict --verbose=2 Starship.app`
 - packaged app: `otool -l Starship.app/Contents/MacOS/Starship` reports `minos 26.0`
