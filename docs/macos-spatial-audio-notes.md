@@ -28,7 +28,7 @@ The native macOS backend uses AudioToolbox with SDL-style queue semantics. Stere
 - head tracking enabled through `kAudioUnitProperty_SpatialMixerEnableHeadTracking`
 - personalized HRTF mode set to system-auto
 
-The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels.
+The backend receives a compact `StarshipSpatialAudioFrame` each audio update. That frame mirrors active SFX identity, channel, position, distance, pan, gain, reverb, and listener angles after the game has chosen active SFX channels. In the current path, positions are already listener-relative, so the listener angles are diagnostic/future world-space data and are not applied as `AUSpatialMixer` head yaw/pitch/roll.
 
 The backend also has a first positional object path for macOS 5.1:
 
@@ -36,6 +36,7 @@ The backend also has a first positional object path for macOS 5.1:
 - buses 1-16 are mono `AUSpatialMixer` point-source inputs, one per SFX sequencer channel
 - moving SFX with non-default `sfxSource` pointers are copied from `DMEM_TEMP` after final resample/gain and before `AudioSynth_ProcessEnvelope` bakes pan into the bed
 - `x/y/z` positions come from the same listener-relative source coordinates used by the existing SFX pan logic, including render/camera transform helpers such as `Object_SetSfxSourceToPos`, `Object_UpdateSfxSource`, and `Object_SetSfxSourceToView`
+- `AUSpatialMixer` global head yaw/pitch/roll stay at zero for these listener-relative object coordinates; AirPods head tracking then applies the user's physical head motion as the only extra rotation
 - player projectile launch sounds use the projectile `sfxSource`, and active projectile sources are refreshed from their visual object position during `PlayerShot_UpdateShot`
 - default-source/system/comms-style sounds stay in the bed so they remain centered/in-head
 - accepted object SFX update their normal envelope state but skip `aEnvMixer` for that audio slice, so the sound is owned by the object bus instead of duplicated in the bed
