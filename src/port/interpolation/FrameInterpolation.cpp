@@ -164,6 +164,8 @@ struct Recording {
 };
 
 bool is_recording;
+bool frame_recording_enabled;
+uint32_t interpolation_skip_depth;
 vector<Path*> current_path;
 uint32_t camera_epoch;
 uint32_t previous_camera_epoch;
@@ -179,6 +181,10 @@ Data& append(Op op) {
     auto& m = current_path.back()->ops[op];
     current_path.back()->items.emplace_back(op, m.size());
     return m.emplace_back();
+}
+
+void update_recording_state() {
+    is_recording = frame_recording_enabled && (interpolation_skip_depth == 0);
 }
 
 MtxF* Matrix_GetCurrent(){
@@ -415,8 +421,20 @@ unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float step) {
 bool camera_interpolation = true;
 
 void FrameInterpolation_ShouldInterpolateFrame(bool shouldInterpolate) {
-    // camera_interpolation = shouldInterpolate;
-    is_recording = shouldInterpolate;
+    if (!frame_recording_enabled) {
+        is_recording = false;
+        return;
+    }
+
+    if (shouldInterpolate) {
+        if (interpolation_skip_depth != 0) {
+            interpolation_skip_depth--;
+        }
+    } else {
+        interpolation_skip_depth++;
+    }
+
+    update_recording_state();
 }
 
 void FrameInterpolation_StartRecord(void) {
@@ -424,19 +442,26 @@ void FrameInterpolation_StartRecord(void) {
     current_recording = {};
     current_path.clear();
     current_path.push_back(&current_recording.root_path);
+    frame_recording_enabled = false;
+    interpolation_skip_depth = 0;
+    is_recording = false;
+    has_inv_actor_mtx = false;
+    next_is_actor_pos_rot_matrix = false;
     if (!camera_interpolation) {
         // default to interpolating
         camera_interpolation = true;
-        is_recording = false;
         return;
     }
     if (GameEngine::GetInterpolationFPS() != 20) {
-        is_recording = true;
+        frame_recording_enabled = true;
+        update_recording_state();
     }
 }
 
 void FrameInterpolation_StopRecord(void) {
     previous_camera_epoch = camera_epoch;
+    frame_recording_enabled = false;
+    interpolation_skip_depth = 0;
     is_recording = false;
 }
 
@@ -453,6 +478,9 @@ void FrameInterpolation_RecordCloseChild(void) {
     if (!is_recording)
         return;
     // append(Op::CloseChild);
+    if (current_path.size() <= 1) {
+        return;
+    }
     if (has_inv_actor_mtx && current_path.size() == inv_actor_mtx_path_index) {
         has_inv_actor_mtx = false;
     }

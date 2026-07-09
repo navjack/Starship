@@ -6404,7 +6404,9 @@ void Map_Arwing_Draw(s32 index) {
 
     Matrix_Push(&gGfxMatrix);
 
-    if (sPaths[index].unk_14 == 2) {
+    bool skipInterpolation = sPaths[index].unk_14 == 2;
+
+    if (skipInterpolation) {
         // @port Skip interpolation
         FrameInterpolation_ShouldInterpolateFrame(false);
     } else {
@@ -6447,8 +6449,13 @@ void Map_Arwing_Draw(s32 index) {
 
     gSPDisplayList(gMasterDisp++, aMapArwingDL);
 
-    // @port renable interpolation
-    FrameInterpolation_ShouldInterpolateFrame(true);
+    if (skipInterpolation) {
+        // @port renable interpolation
+        FrameInterpolation_ShouldInterpolateFrame(true);
+    } else {
+        // @port Pop the transform id.
+        FrameInterpolation_RecordCloseChild();
+    }
 
     Matrix_Pop(&gGfxMatrix);
 }

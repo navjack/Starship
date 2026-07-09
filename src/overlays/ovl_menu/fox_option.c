@@ -3530,8 +3530,6 @@ void Option_DrawArwing(f32 x, f32 y, f32 z, f32 yRot, f32 zRot, f32 scale, s32 i
         FrameInterpolation_ShouldInterpolateFrame(false);
         interpolationEnabled = false;
     } else {
-        // @port renable interpolation
-        FrameInterpolation_ShouldInterpolateFrame(true);
         interpolationEnabled = true;
         // @port: Tag the transform.
         FrameInterpolation_RecordOpenChild("Option_DrawArwing", index);

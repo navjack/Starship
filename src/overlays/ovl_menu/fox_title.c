@@ -277,8 +277,9 @@ static bool sSkipInterpolation = false;
 
 void Title_Draw(void) {
     static s32 camSkipTimes;
+    bool skipInterpolation = sSkipInterpolation;
 
-    if (sSkipInterpolation) {
+    if (skipInterpolation) {
         // @port Skip interpolation
         FrameInterpolation_ShouldInterpolateFrame(false);
         printf("CAMERA 1 SKIPED: %d\n", camSkipTimes++);
@@ -370,7 +371,7 @@ void Title_Draw(void) {
         Wipe_Draw(WIPE_VERTICAL, sWipeHeight);
     }
 
-    if (sSkipInterpolation) {
+    if (skipInterpolation) {
         // @port Re-enable Interpolation if it was skipped
         FrameInterpolation_ShouldInterpolateFrame(true);
     } else {
