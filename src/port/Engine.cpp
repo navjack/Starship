@@ -40,6 +40,9 @@
 #include "audio/GameAudio.h"
 #include "port/patches/DisplayListPatch.h"
 #include "port/mods/PortEnhancements.h"
+#if defined(__APPLE__) && !defined(IOS)
+#include "port/discord/DiscordPresence.h"
+#endif
 
 #include <Fast3D/interpreter.h>
 #include <filesystem>
@@ -72,7 +75,7 @@ GameEngine::GameEngine() {
 #endif
 
     std::vector<std::string> archiveFiles;
-    const std::string main_path = Ship::Context::GetPathRelativeToAppDirectory("sf64.o2r");
+    const std::string main_path = Ship::Context::LocateFileAcrossAppDirs("sf64.o2r");
     const std::string assets_path = Ship::Context::LocateFileAcrossAppDirs("starship.o2r");
 
 #ifdef _WIN32
@@ -302,9 +305,15 @@ void GameEngine::Create() {
     osSetTime(0);
 #endif
     PortEnhancements_Init();
+#if defined(__APPLE__) && !defined(IOS)
+    Starship::DiscordPresence_Init();
+#endif
 }
 
 void GameEngine::Destroy() {
+#if defined(__APPLE__) && !defined(IOS)
+    Starship::DiscordPresence_Shutdown();
+#endif
     PortEnhancements_Exit();
     AudioExit();
     for (auto ptr : MemoryPool) {
@@ -334,6 +343,10 @@ void GameEngine::StartFrame() const {
         default:
             break;
     }
+
+#if defined(__APPLE__) && !defined(IOS)
+    Starship::DiscordPresence_Update();
+#endif
 }
 
 #if 0

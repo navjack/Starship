@@ -286,7 +286,21 @@ void DrawSettingsMenu(){
             if (Ship::Context::GetInstance()->GetAudio()->GetAvailableAudioBackends()->size() <= 1) {
                 UIWidgets::ReEnableComponent("");
             }
-            
+
+            if (currentAudioBackend == Ship::AudioBackend::MACOS_SPATIAL) {
+                auto audioPlayer = Ship::Context::GetInstance()->GetAudio()->GetAudioPlayer();
+                if (audioPlayer != nullptr && audioPlayer->IsInitialized() && audioPlayer->IsSpatialAudioActive()) {
+                    const bool surround51 = audioPlayer->GetAudioChannels() == audioSurround51;
+                    ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f),
+                                       surround51
+                                           ? "Spatial rendering active: 5.1 bed + 16 object buses"
+                                           : "Spatial rendering active: binaural stereo bed + 16 object buses\n"
+                                             "(head tracking via AirPods)");
+                } else {
+                    ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.2f, 1.0f), "Spatial mixer unavailable - plain output");
+                }
+            }
+
             UIWidgets::PaddedEnhancementCheckbox("Surround 5.1 (Needs reload)", "gAudioChannelsSetting", 1, 0);
             
             if (CVarGetInteger("gAudioChannelsSetting", 0) == 1) {
@@ -866,7 +880,20 @@ void DrawDebugMenu() {
         UIWidgets::CVarCheckbox("Disable Collision", "gDebugNoCollision", {
             .tooltip = "Disable vehicle collision"
         });
-        
+
+        {
+            auto audioPlayer = Ship::Context::GetInstance()->GetAudio()->GetAudioPlayer();
+            const bool spatialActive =
+                audioPlayer != nullptr && audioPlayer->IsInitialized() && audioPlayer->IsSpatialAudioActive();
+            UIWidgets::CVarCheckbox("Spatial SFX Visualizer", "gDebugSpatialSfxVisualizer", {
+                .tooltip = "Draws 3-ring gyroscope markers at active 3D sound sources.\n"
+                           "Green: routed to a spatial object bus. Orange: positioned but mixed into the bed.",
+                .disabled = !spatialActive,
+                .disabledTooltip = "Requires the macOS Spatial Audio backend (Settings > Audio > Audio API)",
+            });
+        }
+
+
         UIWidgets::CVarCheckbox("Speed Control", "gDebugSpeedControl", {
             .tooltip = "Arwing speed control. Use D-PAD Left and Right to Increase/Decrease the Arwing Speed, D-PAD Down to stop movement."
         });

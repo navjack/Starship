@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <cstdio>
 #include <math.h>
 #include "port/Engine.h"
 
@@ -41,6 +42,9 @@ given a specific interpolation factor (0=old frame, 0.5=average of frames,
 */
 
 static bool invert_matrix(const float m[16], float invOut[16]);
+
+// Completes the unsized declaration from sf64math.h so the replay can clamp to the stack bounds.
+extern "C" Matrix sInterpolationMatrixStack[0x1000];
 
 using namespace std;
 
@@ -177,7 +181,27 @@ bool has_inv_actor_mtx;
 MtxF inv_actor_mtx;
 size_t inv_actor_mtx_path_index;
 
+// Last line of defense: if the recording path has been corrupted (e.g. by a stray
+// out-of-bounds write elsewhere), drop interpolation for this frame instead of crashing.
+bool recording_path_valid() {
+    if (!current_path.empty() && current_path.back() != nullptr) {
+        return true;
+    }
+    static bool logged = false;
+    if (!logged) {
+        logged = true;
+        fprintf(stderr, "FrameInterpolation: recording path corrupted; disabling interpolation for this frame\n");
+    }
+    is_recording = false;
+    frame_recording_enabled = false;
+    return false;
+}
+
 Data& append(Op op) {
+    if (!recording_path_valid()) {
+        static Data dummy;
+        return dummy;
+    }
     auto& m = current_path.back()->ops[op];
     current_path.back()->items.emplace_back(op, m.size());
     return m.emplace_back();
@@ -313,12 +337,18 @@ struct InterpolateCtx {
                         case Op::Marker:
                             break;
 
+                        // Push/Pop ops can be skipped when the old and new recordings disagree,
+                        // so the replayed stack depth must be clamped to the real stack bounds.
                         case Op::MatrixPush:
-                            Matrix_Push(&gInterpolationMatrix);
+                            if (gInterpolationMatrix < &sInterpolationMatrixStack[0x1000 - 1]) {
+                                Matrix_Push(&gInterpolationMatrix);
+                            }
                             break;
 
                         case Op::MatrixPop:
-                            Matrix_Pop(&gInterpolationMatrix);
+                            if (gInterpolationMatrix > &sInterpolationMatrixStack[0]) {
+                                Matrix_Pop(&gInterpolationMatrix);
+                            }
                             break;
 
                      // Unused on SF64
@@ -414,6 +444,10 @@ unordered_map<Mtx*, MtxF> FrameInterpolation_Interpolate(float step) {
     InterpolateCtx ctx;
     ctx.step = step;
     ctx.w = 1.0f - step;
+    // Replayed Push/Pop ops are skipped when the old and new recordings disagree, so the
+    // stack pointer must be re-based every pass or the imbalance accumulates until
+    // Matrix_Push writes outside sInterpolationMatrixStack and corrupts adjacent memory.
+    gInterpolationMatrix = &sInterpolationMatrixStack[0];
     ctx.interpolate_branch(&previous_recording.root_path, &current_recording.root_path);
     return ctx.mtx_replacements;
 }
@@ -467,6 +501,8 @@ void FrameInterpolation_StopRecord(void) {
 
 void FrameInterpolation_RecordOpenChild(const void* a, int b) {
     if (!is_recording)
+        return;
+    if (!recording_path_valid())
         return;
     label key = { a, b };
     auto& m = current_path.back()->children[key];

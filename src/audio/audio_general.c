@@ -1820,11 +1820,47 @@ void Audio_UpdateSfxVolumeMod(u8 bankId) {
     }
 }
 
+static AudioSpatialDebugSource sSpatialDebugSources[AUDIO_SPATIAL_DEBUG_MAX_SOURCES];
+static u32 sSpatialDebugSourceCount = 0;
+
+u32 AudioSpatialDebug_GetSnapshot(AudioSpatialDebugSource* out, u32 maxCount) {
+    u32 count = sSpatialDebugSourceCount;
+    u32 i;
+
+    if ((out == NULL) || (maxCount == 0)) {
+        return 0;
+    }
+
+    if (count > maxCount) {
+        count = maxCount;
+    }
+    for (i = 0; i < count; i++) {
+        out[i] = sSpatialDebugSources[i];
+    }
+    return count;
+}
+
+static bool Audio_IsPlayerOriginSfxSource(f32* sfxSource) {
+    s32 i;
+
+    if ((gPlayer == NULL) || (sfxSource == NULL)) {
+        return false;
+    }
+
+    for (i = 0; i < gCamCount; i++) {
+        if (sfxSource == gPlayer[i].sfxSource) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void Audio_SubmitSpatialAudioFrame(void) {
     StarshipSpatialAudioFrame frame = { 0 };
     u8 bankId;
     u8 i;
 
+    sSpatialDebugSourceCount = 0;
     frame.frameId = sAudioFrameCounter;
     if (gPlayer != NULL) {
         Player* player = &gPlayer[0];
@@ -1869,12 +1905,29 @@ static void Audio_SubmitSpatialAudioFrame(void) {
             source->x = (entry->xPos != NULL) ? *entry->xPos : 0.0f;
             source->y = (entry->yPos != NULL) ? *entry->yPos : 0.0f;
             source->z = (entry->zPos != NULL) ? *entry->zPos : 0.0f;
-            source->hasShipRelativePosition =
-                AudioSpatial_GetSourceShipRelativePosition(entry->xPos, &source->shipX, &source->shipY, &source->shipZ);
+            source->hasListenerRelativePosition = AudioSpatial_GetSourceListenerRelativePosition(
+                entry->xPos, &source->listenerX, &source->listenerY, &source->listenerZ);
             source->distance = entry->distance;
             source->gain = channelState->volMod;
             source->pan = channelState->pan;
             source->reverb = channelState->reverb;
+
+            // Debug-visualizer snapshot: dynamic world sounds only. Default-source (head-locked) and
+            // player-origin (engine/self) sounds are excluded; radio comms never enter the SFX banks
+            // (they play through SEQ_PLAYER_VOICE).
+            if (!source->isDefaultSource && !Audio_IsPlayerOriginSfxSource(entry->xPos) &&
+                (sSpatialDebugSourceCount < ARRAY_COUNT(sSpatialDebugSources))) {
+                AudioSpatialDebugSource* debugSource = &sSpatialDebugSources[sSpatialDebugSourceCount];
+
+                debugSource->instanceId = entry->spatialInstanceId;
+                debugSource->sfxId = entry->sfxId;
+                debugSource->onObjectBus = false;
+                debugSource->hasWorldPos = AudioSpatial_GetSourceWorldPosition(
+                    entry->xPos, &debugSource->worldX, &debugSource->worldY, &debugSource->worldZ);
+                if (debugSource->hasWorldPos) {
+                    sSpatialDebugSourceCount++;
+                }
+            }
         }
     }
 

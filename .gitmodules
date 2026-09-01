@@ -3,7 +3,7 @@
 	url = https://github.com/simonlindholm/asm-differ
 [submodule "tools/Torch"]
 	path = tools/Torch
-	url = https://github.com/HarbourMasters/Torch
+	url = https://github.com/navjack/Torch.git
 [submodule "libultraship"]
 	path = libultraship
-	url = https://github.com/Kenix3/libultraship.git
+	url = https://github.com/navjack/libultraship.git

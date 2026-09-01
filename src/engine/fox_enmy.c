@@ -93,7 +93,7 @@ void Object_PlayerSfx(f32* pos, u32 sfxId, s32 playerNum) {
 
 void Object_Kill(Object* obj, f32* sfxSrc) {
     obj->status = OBJ_FREE;
-    AudioSpatial_ClearSourceShipRelativePosition(sfxSrc);
+    AudioSpatial_ClearSourceListenerRelativePosition(sfxSrc);
     Audio_KillSfxBySource(sfxSrc);
 }
 

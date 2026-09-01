@@ -21,9 +21,15 @@ extern s32 sAudioFrameCounter;
 
 typedef struct AudioSpatialSourcePosition {
     f32* sfxSource;
+    // Listener-relative: origin at the player ship, axes rotated by the camera yaw/pitch.
     f32 x;
     f32 y;
     f32 z;
+    // Raw world position as passed into Object_SetSpatialSfxSourceToPos, for the debug visualizer.
+    f32 worldX;
+    f32 worldY;
+    f32 worldZ;
+    u8 hasWorldPos;
 } AudioSpatialSourcePosition;
 
 static s16 sSpatialObjectPcmScratch[SPATIAL_OBJECT_PCM_MAX_FRAMES];
@@ -46,18 +52,29 @@ static AudioSpatialSourcePosition* AudioSpatial_FindSourcePositionSlot(f32* sfxS
     return NULL;
 }
 
-void AudioSpatial_SetSourceShipRelativePosition(f32* sfxSource, f32 x, f32 y, f32 z) {
+static AudioSpatialSourcePosition* AudioSpatial_FindOrCreateSourcePositionSlot(f32* sfxSource) {
     AudioSpatialSourcePosition* slot;
 
     if ((sfxSource == NULL) || (sfxSource == gDefaultSfxSource)) {
-        return;
+        return NULL;
     }
 
     slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
     if (slot == NULL) {
         slot = &sSpatialSourcePositions[sSpatialSourcePositionCursor];
         sSpatialSourcePositionCursor = (sSpatialSourcePositionCursor + 1) % ARRAY_COUNT(sSpatialSourcePositions);
+        *slot = (AudioSpatialSourcePosition){ 0 };
         slot->sfxSource = sfxSource;
+    }
+
+    return slot;
+}
+
+void AudioSpatial_SetSourceListenerRelativePosition(f32* sfxSource, f32 x, f32 y, f32 z) {
+    AudioSpatialSourcePosition* slot = AudioSpatial_FindOrCreateSourcePositionSlot(sfxSource);
+
+    if (slot == NULL) {
+        return;
     }
 
     slot->x = x;
@@ -65,18 +82,15 @@ void AudioSpatial_SetSourceShipRelativePosition(f32* sfxSource, f32 x, f32 y, f3
     slot->z = z;
 }
 
-void AudioSpatial_ClearSourceShipRelativePosition(f32* sfxSource) {
+void AudioSpatial_ClearSourceListenerRelativePosition(f32* sfxSource) {
     AudioSpatialSourcePosition* slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
 
     if (slot != NULL) {
-        slot->sfxSource = NULL;
-        slot->x = 0.0f;
-        slot->y = 0.0f;
-        slot->z = 0.0f;
+        *slot = (AudioSpatialSourcePosition){ 0 };
     }
 }
 
-bool AudioSpatial_GetSourceShipRelativePosition(f32* sfxSource, f32* x, f32* y, f32* z) {
+bool AudioSpatial_GetSourceListenerRelativePosition(f32* sfxSource, f32* x, f32* y, f32* z) {
     AudioSpatialSourcePosition* slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
 
     if ((slot == NULL) || (x == NULL) || (y == NULL) || (z == NULL)) {
@@ -86,6 +100,32 @@ bool AudioSpatial_GetSourceShipRelativePosition(f32* sfxSource, f32* x, f32* y, 
     *x = slot->x;
     *y = slot->y;
     *z = slot->z;
+    return true;
+}
+
+void AudioSpatial_SetSourceWorldPosition(f32* sfxSource, f32 x, f32 y, f32 z) {
+    AudioSpatialSourcePosition* slot = AudioSpatial_FindOrCreateSourcePositionSlot(sfxSource);
+
+    if (slot == NULL) {
+        return;
+    }
+
+    slot->worldX = x;
+    slot->worldY = y;
+    slot->worldZ = z;
+    slot->hasWorldPos = true;
+}
+
+bool AudioSpatial_GetSourceWorldPosition(f32* sfxSource, f32* x, f32* y, f32* z) {
+    AudioSpatialSourcePosition* slot = AudioSpatial_FindSourcePositionSlot(sfxSource);
+
+    if ((slot == NULL) || !slot->hasWorldPos || (x == NULL) || (y == NULL) || (z == NULL)) {
+        return false;
+    }
+
+    *x = slot->worldX;
+    *y = slot->worldY;
+    *z = slot->worldZ;
     return true;
 }
 
@@ -158,8 +198,8 @@ static bool AudioSpatial_FindSourceForSfxChannel(u8 channelIndex, StarshipSpatia
             source->x = *entry->xPos;
             source->y = (entry->yPos != NULL) ? *entry->yPos : 0.0f;
             source->z = (entry->zPos != NULL) ? *entry->zPos : 0.0f;
-            source->hasShipRelativePosition =
-                AudioSpatial_GetSourceShipRelativePosition(entry->xPos, &source->shipX, &source->shipY, &source->shipZ);
+            source->hasListenerRelativePosition = AudioSpatial_GetSourceListenerRelativePosition(
+                entry->xPos, &source->listenerX, &source->listenerY, &source->listenerZ);
             source->distance = entry->distance;
             source->gain = channelState->volMod;
             source->pan = channelState->pan;

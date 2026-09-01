@@ -2056,6 +2056,10 @@ void Display_Update(void) {
     }
 
     BonusText_DrawAll();
+
+    // @port: world-space overlays (still inside the LookAt camera scope)
+    CALL_EVENT(DisplayWorldOverlayEvent);
+
     Matrix_Pop(&gGfxMatrix);
     Display_ActorMarks();
     Display_LockOnIndicator();

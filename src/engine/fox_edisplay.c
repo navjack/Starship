@@ -1590,24 +1590,31 @@ static void Object_SetSpatialSfxSourceToPos(f32* sfxSrc, Vec3f* pos) {
     f32 clamped[3];
 
     if ((sfxSrc == NULL) || (pos == NULL) || (gCamCount != 1) || (gPlayer == NULL)) {
-        AudioSpatial_ClearSourceShipRelativePosition(sfxSrc);
+        AudioSpatial_ClearSourceListenerRelativePosition(sfxSrc);
         return;
     }
 
     player = &gPlayer[0];
-    Matrix_RotateY(gCalcMatrix, (player->rot.y + player->yRot_114) * M_DTOR, MTXF_NEW);
-    Matrix_RotateX(gCalcMatrix, (player->rot.x + player->xRot_120 + player->aerobaticPitch) * M_DTOR, MTXF_APPLY);
+    Matrix_Push(&gCalcMatrix);
+    // Rotate by the camera basis so audio-forward matches screen-forward (the camera lags the ship
+    // during rolls/turns), keeping the ship as origin so flybys wrap around the player's avatar.
+    // Roll is omitted so barrel rolls don't whirl the soundfield; physical head rotation composes
+    // on top via the OS head tracker.
+    Matrix_RotateY(gCalcMatrix, player->camYaw, MTXF_NEW);
+    Matrix_RotateX(gCalcMatrix, player->camPitch, MTXF_APPLY);
 
     src.x = pos->x - player->pos.x;
     src.y = pos->y - player->pos.y;
     src.z = pos->z - player->trueZpos;
     Matrix_MultVec3fNoTranslate(gCalcMatrix, &src, &dest);
+    Matrix_Pop(&gCalcMatrix);
 
     clamped[0] = dest.x;
     clamped[1] = dest.y;
     clamped[2] = dest.z;
     Object_ClampSfxSource(clamped);
-    AudioSpatial_SetSourceShipRelativePosition(sfxSrc, clamped[0], clamped[1], clamped[2]);
+    AudioSpatial_SetSourceListenerRelativePosition(sfxSrc, clamped[0], clamped[1], clamped[2]);
+    AudioSpatial_SetSourceWorldPosition(sfxSrc, pos->x, pos->y, pos->z);
 }
 
 void Object_SetSfxSourceToPos(f32* sfxSrc, Vec3f* pos) {

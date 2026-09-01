@@ -5,6 +5,9 @@
 
 DEFINE_EVENT(DisplayPreUpdateEvent);
 DEFINE_EVENT(DisplayPostUpdateEvent);
+// Fires inside Display_Update's camera (LookAt) matrix scope, after all world geometry — for
+// overlays that must land in world space.
+DEFINE_EVENT(DisplayWorldOverlayEvent);
 
 DEFINE_EVENT(GamePreUpdateEvent);
 DEFINE_EVENT(GamePostUpdateEvent);

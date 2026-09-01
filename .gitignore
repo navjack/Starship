@@ -59,3 +59,8 @@ src/cn/
 
 properties.h
 mods*/
+
+# --- macOS port: build artifacts, ROMs and local machine state ---
+*.app/
+.DS_Store
+dist/

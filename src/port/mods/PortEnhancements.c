@@ -1,4 +1,5 @@
 #include "PortEnhancements.h"
+#include "SpatialSfxDebug.h"
 #include "global.h"
 #include "hit64.h"
 #include "mods.h"
@@ -407,6 +408,8 @@ void OnPlayerShootChargedPre(PlayerActionPreShootChargedEvent* ev) {
 void PortEnhancements_Init() {
     PortEnhancements_Register();
 
+    SpatialSfxDebug_Init();
+
     // Register event listeners
     REGISTER_LISTENER(DisplayPostUpdateEvent, OnDisplayUpdatePost, EVENT_PRIORITY_NORMAL);
     REGISTER_LISTENER(GamePostUpdateEvent, OnGameUpdatePost, EVENT_PRIORITY_NORMAL);
@@ -436,6 +439,7 @@ void PortEnhancements_Register() {
     // Register engine events
     REGISTER_EVENT(DisplayPreUpdateEvent);
     REGISTER_EVENT(DisplayPostUpdateEvent);
+    REGISTER_EVENT(DisplayWorldOverlayEvent);
 
     REGISTER_EVENT(GamePreUpdateEvent);
     REGISTER_EVENT(GamePostUpdateEvent);

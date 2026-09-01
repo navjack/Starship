@@ -35,9 +35,14 @@ list(GET NATO_PHONETIC_ALPHABET ${PATCH_INDEX} PROJECT_PATCH_WORD)
 
 set(PROJECT_BUILD_NAME "Barnard ${PROJECT_PATCH_WORD}" CACHE STRING "" FORCE)
 set(PROJECT_TEAM "SonicDcer & Lywx" CACHE STRING "" FORCE)
+set(STARSHIP_DISCORD_CLIENT_ID "" CACHE STRING "Discord application client ID for macOS Rich Presence")
 
 if(APPLE)
   enable_language(OBJCXX)
+  if(EXISTS "/opt/homebrew")
+    list(PREPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+  endif()
+  set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
 endif()
 
 # Set the C++ standard and enable the MSVC parallel build option
@@ -178,6 +183,15 @@ list(FILTER ALL_FILES EXCLUDE REGEX "src/sys/sys_timer.c")
 list(FILTER ALL_FILES EXCLUDE REGEX "src/sys/sys_fault.c")
 list(FILTER ALL_FILES EXCLUDE REGEX "src/mods/object_ram.c")
 
+if (APPLE AND NOT IOS)
+    list(APPEND ALL_FILES
+        "src/port/discord/DiscordIpcClient.cpp"
+        "src/port/discord/DiscordIpcClient.h"
+        "src/port/discord/DiscordPresence.cpp"
+        "src/port/discord/DiscordPresence.h"
+    )
+endif()
+
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set(IOS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libultraship/ios)
 
@@ -198,6 +212,13 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
     )
 else()
     add_executable(${PROJECT_NAME} ${ALL_FILES})
+endif()
+
+if (APPLE AND NOT IOS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        STARSHIP_ENABLE_DISCORD_PRESENCE=1
+        STARSHIP_DISCORD_CLIENT_ID="${STARSHIP_DISCORD_CLIENT_ID}"
+    )
 endif()
 
 ################################################################################
@@ -622,7 +643,14 @@ include(ExternalProject)
 ExternalProject_Add(TorchExternal
 	PREFIX TorchExternal
     SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/Torch
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/Torch
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/Torch
+        -DBUILD_SM64=OFF
+        -DBUILD_MK64=OFF
+        -DBUILD_FZERO=OFF
+        -DBUILD_MARIO_ARTIST=OFF
+        -DBUILD_NAUDIO=ON
+        -DBUILD_SF64=ON
 )
 ExternalProject_Get_Property(TorchExternal install_dir)
 if (MSVC)
@@ -674,6 +702,7 @@ add_custom_target(CreateOSXIcons
     configure_file("${CMAKE_SOURCE_DIR}/Info.plist" "${CMAKE_BINARY_DIR}/Info.plist" COPYONLY)
     INSTALL(TARGETS ${PROJECT_NAME} DESTINATION ../MacOS COMPONENT Starship)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt DESTINATION ../MacOS COMPONENT Starship)
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/sf64.o2r DESTINATION ../Resources COMPONENT Starship)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/starship.o2r DESTINATION ../Resources COMPONENT Starship)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/config.yml DESTINATION ../Resources COMPONENT Starship)
     INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/assets/ DESTINATION ../Resources/assets COMPONENT Starship)
@@ -682,6 +711,8 @@ add_custom_target(CreateOSXIcons
     install(CODE "
         include(BundleUtilities)
         fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/../MacOS/Starship\" \"\" \"${dirs}\")
+        set(BUNDLE_EXECUTABLE \"\${CMAKE_INSTALL_PREFIX}/../MacOS/Starship\")
+        include(\"${CMAKE_SOURCE_DIR}/cmake/MacOSCanonicalizeBundleDylibs.cmake\")
     ")
 endif()
 
